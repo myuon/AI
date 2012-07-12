@@ -113,6 +113,7 @@ iniList = PickInitial(wrdList)
 inis = [x[0] for x in iniList]
 
 print u"アリーチェ：いらっしゃいませ〜。メッセージをどうぞ〜"
+
 while True:
     s = raw_input("あなた：").decode('utf-8')
     if s == '': continue
@@ -136,6 +137,5 @@ while True:
         cnt += 1
 
     print u"アリーチェ："+msg
-        
-print "アリーチェ：ばいば〜い"
 
+print "アリーチェ：ばいば〜い"
