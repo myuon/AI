@@ -8,114 +8,134 @@
 import random
 import sys
 
-# 全角文字だけ抜き出して、1文字ずつ格納
-def GetWideChar(lines,wide):
-    for i in range(len(lines)):
-        n = 0
-        while n < len(lines[i])-1:
-            tip = ''
-            if n % 2 == 0 and not lines[i][n] in [' ', '\n'] :
-                tip += lines[i][n]
-            tip += lines[i][n+1]
-            if tip != '　' :
-                wide += [tip]
-            n += 2
-    return
+# ファイル関係
+def FOpen(_file):
+    dat_file = ''
+    if len(sys.argv)==1: dat_file = _file
+    else: dat_file = sys.argv[1]
 
-#n文字ずつのリストに再構築
-def NGramList(wide,n):
-    new = ['']*(len(wide)-n+1)
-    for i in range(len(wide)-n+1):
-        for l in range(n):
-            new[i] += wide[i+l]
-    return new
+    n = raw_input("n-gram：")
+    if n == '': n = 3
+    else: n = int(n)
 
-# ソート
-def Sort(wide,num=[]):
-    if num == [] :
-        wide.sort()
-    else:
-        for i in range(len(num)):
-            bf = num.index(max(num[i:]),i)
-            tmp = num[bf]
-            num[bf] = num[i]
-            num[i] = tmp
+    f = open(dat_file,'r')
+    lines = f.readlines()
+    
+    return lines,n
 
-            tmp = wide[bf]
-            wide[bf] = wide[i]
-            wide[i] = tmp
+# unicode変換
+def GetWideChar(_lines):
+    lines = []
+    for i in range(len(_lines)):
+        lines.append(_lines[i].decode('utf-8'))
+    return lines
+
+# n文字ずつのリストに再構築
+def NGramList(_lines,n):
+    _lines = "".join(_lines)
+    lines = []
+    for i in range(len(_lines)):
+        if i+n == len(_lines)-1: break
+        lines.append(_lines[i:i+n])
+
+    return lines
 
 # 重複の削除
-def Uniqs(wide):
-    new = []
-    num = []
-    prev = ''
-    px = -1
-    for i in wide:
-        if i == prev:
-            num[px] += 1
-        else:
-            new += [i]
-            prev = i
-            px += 1
-            num += [1]
-    return new,num
+def Uniqs(_lines):
+    prevStr = ''
+    fSame = False
+    wrdList = []
+    lstIndex = -1
 
-# 連鎖しながら出力
-def TypeChar(wide,n,message):
-    for i in range(2,len(wide[n])):
-        if i % 2 == 0:
-            message += wide[n][i]+wide[n][i+1]
-    return wide[n][-2]+wide[n][-1],message
+    for i in range(len(_lines)):
+        if prevStr == _lines[i]: fSame = True
+        else: fSame = False
+
+        if fSame == True:
+            wrdList[lstIndex][1] += 1
+        else:
+            wrdList.append([_lines[i],1])
+            lstIndex += 1
+
+        prevStr = _lines[i]
+    return wrdList
+
+# 重複の番号付き削除
+def idxUniqs(_lines):
+    prevStr = ''
+    fSame = False
+    wrdList = []
+    lstIndex = -1
+
+    for i in range(len(_lines)):
+        if prevStr == _lines[i]: fSame = True
+        else: fSame = False
+
+        if fSame == True:
+            wrdList[lstIndex][1] += 1
+        else:
+            wrdList.append([_lines[i],1,i])
+            lstIndex += 1
+
+        prevStr = _lines[i]
+    return wrdList
+    
+# 頭文字だけ集めておく
+def PickInitial(_list):
+    iniList = []
+    for i in range(len(_list)):
+        iniList.append(_list[i][0][0])
+
+    return idxUniqs(iniList)
+
+# ルーレットを作る
+def MakeRouret(_wrdlist, _inilist, iniChar):
+    rouret = []
+    index = _inilist[[x[0] for x in iniList].index(iniChar)][2]
+    while _wrdlist[index][0][0] == iniChar:
+        rouret += [index]*_wrdlist[index][1]
+        index += 1
+    
+    return rouret
 
 # main
-s = sys.argv[1]
-if s == '':
-    s = 'text/sample.txt'
-n = raw_input("n-gram：")
-if n == '':
-    n = 3
-else:
-    n = int(n)
-f = open(s,'r')
-lines = f.readlines()
+lines,n = FOpen('text/sample.txt')
 
-wide = []
-start = ''
+# wide = []
+# start = ''
 
-GetWideChar(lines,wide)
-wide = NGramList(wide,n)
-Sort(wide)
-wide,num = Uniqs(wide)
-Sort(wide,num)
+lines = GetWideChar(lines)
+lines = NGramList(lines,n)
+lines.sort()
 
-# Quick 1st-letter-List
-ql = []
-for i in wide:
-    ql += [i[0]+i[1]]
+wrdList = Uniqs(lines)
+iniList = PickInitial(wrdList)
+inis = [x[0] for x in iniList]
 
-print "アリーチェ：いらっしゃいませ〜。メッセージをどうぞ〜"
-while s != 'exit' :
-    s = raw_input("あなた：")
-    if s != '' and s != 'exit' :
-        start = ''
-        while not start in ql:
-            p = random.randint(0,len(s)/2-1)
-            start = s[p*2]+s[p*2+1]
-        tip = start
-        hist = 0
-        message = start
+print u"アリーチェ：いらっしゃいませ〜。メッセージをどうぞ〜"
+while True:
+    s = raw_input("あなた：").decode('utf-8')
+    if s == '': continue
 
-        while tip != '。' and tip != '？' and tip != '！' and hist <= 500:
-            cnt = []
-            for l in range(len(ql)):
-                if ql[l] == tip:
-                    cnt += [l]*num[l]
-            n = random.choice(cnt)
+    iniChar = ''
+    for i in range(len(s)):
+        if s[i] in inis:
+            iniChar = s[i]
+            break
+    if iniChar == '':
+        iniChar = random.choice(inis)
+    
+    word = ''
+    cnt = 0
+    msg = ''
+    while word == '' or (word[-1] != u'。' and word[-1] != u'？' and word[-1] != u'！' and cnt <= 20):
+        rouret = MakeRouret(wrdList, iniList, iniChar)
+        word = wrdList[random.choice(rouret)][0]
+        msg += word[:-1]
+        iniChar = word[-1]
+        cnt += 1
 
-            tip,message = TypeChar(wide,n,message)
-            hist += 1
-        print 'アリーチェ：'+message
+    print u"アリーチェ："+msg
         
 print "アリーチェ：ばいば〜い"
 
