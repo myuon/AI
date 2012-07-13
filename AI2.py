@@ -101,9 +101,6 @@ def MakeRouret(_wrdlist, _inilist, iniChar):
 # main
 lines,n = FOpen('text/sample.txt')
 
-# wide = []
-# start = ''
-
 lines = GetWideChar(lines)
 lines = NGramList(lines,n)
 lines.sort()
