@@ -60,40 +60,13 @@ def Uniqs(_lines):
         prevStr = _lines[i]
     return wrdList
 
-# 重複の番号付き削除
-def idxUniqs(_lines):
-    prevStr = ''
-    fSame = False
-    wrdList = []
-    lstIndex = -1
-
-    for i in range(len(_lines)):
-        if prevStr == _lines[i]: fSame = True
-        else: fSame = False
-
-        if fSame == True:
-            wrdList[lstIndex][1] += 1
-        else:
-            wrdList.append([_lines[i],1,i])
-            lstIndex += 1
-
-        prevStr = _lines[i]
-    return wrdList
-    
-# 頭文字だけ集めておく
-def PickInitial(_list):
-    iniList = []
-    for i in range(len(_list)):
-        iniList.append(_list[i][0][0])
-
-    return idxUniqs(iniList)
-
 # ルーレットを作る
-def MakeRouret(_wrdlist, _inilist, iniChar):
+def MakeRouret(_wrdList, iniChar):
     rouret = []
-    index = _inilist[[x[0] for x in iniList].index(iniChar)][2]
-    while _wrdlist[index][0][0] == iniChar:
-        rouret += [index]*_wrdlist[index][1]
+    iniList = [x[0][0] for x in _wrdList]
+    index = iniList.index(iniChar)
+    while iniChar == iniList[index] :
+        rouret += [index]*_wrdList[index][1]
         index += 1
     
     return rouret
@@ -106,8 +79,6 @@ lines = NGramList(lines,n)
 lines.sort()
 
 wrdList = Uniqs(lines)
-iniList = PickInitial(wrdList)
-inis = [x[0] for x in iniList]
 
 print u"アリーチェ：いらっしゃいませ〜。メッセージをどうぞ〜"
 
@@ -117,17 +88,17 @@ while True:
 
     iniChar = ''
     for i in range(len(s)):
-        if s[i] in inis:
+        if s[i] in [x[0][0] for x in wrdList]:
             iniChar = s[i]
             break
     if iniChar == '':
-        iniChar = random.choice(inis)
+        iniChar = random.choice([i[0][0] for x in wrdList])
     
     word = ''
     cnt = 0
     msg = ''
     while word == '' or (word[-1] != u'。' and word[-1] != u'？' and word[-1] != u'！' and cnt <= 20):
-        rouret = MakeRouret(wrdList, iniList, iniChar)
+        rouret = MakeRouret(wrdList, iniChar)
         word = wrdList[random.choice(rouret)][0]
         msg += word[:-1]
         iniChar = word[-1]
