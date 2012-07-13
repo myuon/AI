@@ -5,142 +5,116 @@
 形態素解析プログラムによって出力された
 形態素のテキストファイルを利用して応答する
 マルコフ連鎖の形態素型アリーチェとの会話プログラム
+(漢字を優先的に選ぶ)
 """
 import random
 import sys
+import re
+
 
 # ファイル関係
-def FOpen(name):
-    f = file(name,'r')
-    s = f.readlines()
-    t = ''
-    for i in s:
-        t += i
-    s = t.split('\n')
-    del(s[-1])
+def FOpen(_file):
+    dat_file = ''
+    if len(sys.argv)==1: dat_file = _file
+    else: dat_file = sys.argv[1]
 
-    return s
+    n = raw_input("n-gram：")
+    if n == '': n = 3
+    else: n = int(n)
 
-# n個ずつ形態素が含まれるリストに再構築
-def NGramList(wide,n):
-    new = ['']*(len(wide)-n+1)
-    for i in range(len(wide)-n+1):
-        for l in range(n):
-            new[i] += wide[i+l]
-    return new
+    f = open(dat_file,'r')
+    lines = f.readlines()
+    
+    return lines,n
 
-# ソート
-def Sort(wide,num=[]):
-    if num == [] :
-        wide.sort()
-    else:
-        for i in range(len(num)):
-            bf = num.index(max(num[i:]),i)
-            tmp = num[bf]
-            num[bf] = num[i]
-            num[i] = tmp
+# unicode変換
+def GetWideChar(_lines):
+    lines = []
+    for i in range(len(_lines)):
+        lines.append(_lines[i].decode('utf-8'))
+    return lines
 
-            tmp = wide[bf]
-            wide[bf] = wide[i]
-            wide[i] = tmp
+# n文字ずつのリストに再構築
+def NGramList(_lines,n):
+    _lines = "".join(_lines)
+    lines = []
+    for i in range(len(_lines)):
+        if i+n == len(_lines)-1: break
+        lines.append(_lines[i:i+n])
+
+    return lines
 
 # 重複の削除
-def Uniqs(wide):
-    new = []
-    num = []
-    prev = ''
-    px = -1
-    for i in wide:
-        if i == prev:
-            num[px] += 1
+def Uniqs(_lines):
+    prevStr = ''
+    fSame = False
+    wrdList = []
+    lstIndex = -1
+
+    for i in range(len(_lines)):
+        if prevStr == _lines[i]: fSame = True
+        else: fSame = False
+
+        if fSame == True:
+            wrdList[lstIndex][1] += 1
         else:
-            new += [i]
-            prev = i
-            px += 1
-            num += [1]
-    return new,num
+            wrdList.append([_lines[i],1])
+            lstIndex += 1
 
-# 開始文字列の決定
-def SetStartch(line,l):
-    line += '　'
-    for i in range(l,len(line),2):
-        # 漢字があったらそれを開始文字とする
-        if line[i]>='\x88':
-            l = i
-            break
-        elif line[i]=='　':
-            l = i
-            break
-    # なければ仕方がないので適当に
-    if line[l]=='　':
-        start = 'あ'
-    else:
-        start = line[l]+line[l+1]
-        while line[l+2]>='\x88':
-            l += 2
-            start += line[l]+line[l+1]
-    return start,l
+        prevStr = _lines[i]
+    return wrdList
 
-# 形態素の中から単語を探してリストから自由に選択したものを返す
-def Findch(start):
-    cnt = []
-    for i in range(len(s)):
-        if start in s[i] and start[0] == s[i][0]:
-            cnt += [i]*num[i]
-            return random.choice(cnt)
-    # 見つからなかった場合
-    return -1
+# 開始文字列の決定(漢字優先)
+def SetStartch(_line):
+    chList = re.findall(u"[\u4e00-\u9fa5]+", _line)
+    if chList == []: return ""
+    else: return random.choice(chList)[0]
 
-# 連鎖しながら出力
-def TypeChar(wide,n,message):
-    # 重複の削除
-    i = 0
-    while i < range(len(message)):
-        if wide[n][-1-i] == message[-1-i] and wide[n][-2-i] == message[-2-i]:
-            message = message.strip(message[-1]+message[-2])
-            i -= 2
-        else:
-            break
-        i += 2
+# 形態素の中から単語を探してリストから選択したものを返す
+def Findch(_wrdList, _iniChar):
+    iniChar = _iniChar
+    if not _iniChar in [x[0][0] for x in _wrdList]: iniChar = random.choice([x[0][0] for x in _wrdList])
+        
+    return iniChar
 
-    message += wide[n]
-    return wide[n],message
-
-# メッセージの表示
-def Mes(start):
-    tip = start
-    hist = 0
-    message = start
-
-    # メッセージは最大50単語まで
-    while not( '。' in tip or '？' in tip or '！' in tip ) and hist <= 50:
-        # はじめの単語を決定する
-        n = Findch(tip)
-
-        tip,message = TypeChar(s,n,message)
-        hist += 1
-    print 'アリーチェ：'+message
+# ルーレットを作る
+def MakeRouret(_wrdList, iniChar):
+    rouret = []
+    iniList = [x[0][0] for x in _wrdList]
+    index = iniList.index(iniChar)
+    while iniChar == iniList[index]:
+        rouret += [index]*_wrdList[index][1]
+        index += 1
+    
+    return rouret
 
 # main
-t = sys.argv[1]
-if t=='': t = 'text/sample.txt'
-s = NGramList(FOpen(t),2)
-Sort(s)
-s,num = Uniqs(s)
-Sort(s,num)
+lines,n = FOpen('text/sample.txt')
+
+lines = GetWideChar(lines)
+lines = NGramList(lines,n)
+lines.sort()
+
+wrdList = Uniqs(lines)
 
 print "アリーチェ：いらっしゃいませ〜。メッセージをどうぞ〜"
-cv = ''
-while cv != 'exit' :
-    cv = raw_input("あなた：")
-    if cv != '' and cv != 'exit' :
-        # cvから漢字を切り出してはじめの文字にする
-        l = 0
-        start,l = SetStartch(cv,l)
-        while Findch(start) == -1:
-            start,l = SetStartch(cv,l)
-            print start
-        Mes(start)
+while True:
+    s = raw_input("あなた：").decode('utf-8')
+    if s == '': continue
+
+    iniChar = SetStartch(s)
+    iniChar = Findch(wrdList, iniChar)
+
+    word,msg = '', ''
+    cnt = 0
+    while word == '' or (word[-1] != u'。' and word[-1] != u'？' and word[-1] != u'！' and cnt <= 20):
+        rouret = MakeRouret(wrdList, iniChar)
+        word = wrdList[random.choice(rouret)][0]
+        msg += word[:-1]
+        iniChar = word[-1]
+        cnt += 1
+
+    print u"アリーチェ："+msg
 
 print "アリーチェ：ばいば〜い"
 
