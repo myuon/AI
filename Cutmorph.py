@@ -6,64 +6,72 @@
 文章の解析
   ->形態素解析
 """
-# 全角文字だけ抜き出して、すべて突っ込む
-def GetWideChar(lines,wide):
-    for i in range(len(lines)):
-        n = 0
-        while n < len(lines[i])-1:
-            tip = ''
-            l = lines[i][n]
-            if (l>'\x7F' and l<'\xA0') or (l>'\xDF' and l<'\xF0'):
-                tip += lines[i][n]
-            tip += lines[i][n+1]
-            if tip != '　' :
-                wide[0] += tip
-            n += 2
-    return
+
+import re
+import sys
+
+# ファイル関係
+def FOpen(_file):
+    dat_file = ''
+    if len(sys.argv)==1: dat_file = _file
+    else: dat_file = sys.argv[1]
+
+    f = open(dat_file,'r')
+    lines = f.readlines()
+    
+    return lines,dat_file
+
+# unicode変換
+def toUnicode(_lines):
+    lines = []
+    for i in range(len(_lines)):
+        lines.append(_lines[i].decode('utf-8'))
+    return lines
 
 #形態素の切り出し
-def Morph(wide):
-    m,prev = '',''
-    tmp = wide[0]
-    mor = []
-    pm = -1
-    for i in range(0,len(tmp),2):
-        ch = tmp[i]+tmp[i+1]
+def Morph(_str):
+    nowMode = 'None'
+    preMode = 'None'
+    morphList = []
+    index = -1
+    for i in range(len(_str)):
         # 長音「ー」は前の形態に引っ張られる
-        if ch == 'ー':
-            m = prev
-        elif tmp[i]>='\x88':
-            m = 'c'
-        elif tmp[i]=='\x83' and 40<=tmp[i+1]<='\x96':
-            m = 'k'
-        elif ch=='.' or ch==',' or ch=='。' or ch=='、':
-            m = 'n'
+        if re.match(u"[ー]", _str[i]) != None:
+            nowMode = preMode
+        elif re.match(u"[\u4e00-\u9fa5]", _str[i]) != None:
+            nowMode = 'KANJI'
+        elif re.match(u"[ぁ-ゞ]", _str[i]) != None:
+            nowMode = 'HIRAGANA'
+        elif re.match(u"[ァ-ヾ]", _str[i]) != None:
+            nowMode = 'KATAKANA'
+        elif re.match(u"[ｦ-ﾝ]", _str[i]) != None:
+            nowMode = 'HANKANA'
+        elif re.match(u"[。、！？―（）\.,!\?\-\(\)…・]", _str[i]) != None:
+            nowMode = 'KIGOU'
         else:
-            m = 'e'
+            nowMode = 'OTHER'
+            
+        if nowMode == 'OTHER': continue
 
-        if m != prev and m != 'n':
-            mor += [tmp[i]+tmp[i+1]]
-            pm += 1
+        if nowMode != preMode:
+            morphList.append(_str[i])
+            index += 1
         else:
-            mor[pm] += tmp[i]+tmp[i+1]
-        prev = m
-    return mor
+            morphList[index]+=_str[i]
+
+        preMode = nowMode
+    return morphList
 
 # main
-s = raw_input("ファイル名:")
-if s == '':
-    s = 'text\cut.txt'
-f = open(s,'r')
-lines = f.readlines()
+lines,dat_file = FOpen(u'text/sample.txt')
+lines = toUnicode(lines)
+lines = "".join(lines)
 
-wide = ['']
-GetWideChar(lines,wide)
-wide = Morph(wide)
+morph = Morph(lines)
 
-fn = 'text\save\morph_'+s[s.index('\\')+1:-4]+'.txt'
+fn = u'save/m_'+dat_file.split('/')[-1]+'.txt'
 f = open(fn,'w')
-for i in wide:
-    f.write(i+'\n')
-    print i
+for i in morph:
+    f.write(i.encode("utf-8")+"\n")
 f.close()
 
