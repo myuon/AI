@@ -69,7 +69,7 @@ lines = "".join(lines)
 
 morph = Morph(lines)
 
-fn = u'save/m_'+dat_file.split('/')[-1]+'.txt'
+fn = u'save/m_'+(dat_file.split('/')[-1]).split('.')[0]+'.txt'
 f = open(fn,'w')
 for i in morph:
     f.write(i.encode("utf-8")+"\n")
