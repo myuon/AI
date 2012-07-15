@@ -39,15 +39,31 @@ def Morph(_str):
         if re.match(u"[ー]", _str[i]) != None:
             nowMode = preMode
         elif re.match(u"[\u4e00-\u9fa5]", _str[i]) != None:
-            nowMode = 'KANJI'
+            nowMode = 'ZEN_KANJI'
         elif re.match(u"[ぁ-ゞ]", _str[i]) != None:
-            nowMode = 'HIRAGANA'
+            nowMode = 'ZEN_HIRAGANA'
         elif re.match(u"[ァ-ヾ]", _str[i]) != None:
-            nowMode = 'KATAKANA'
+            nowMode = 'ZEN_KATAKANA'
         elif re.match(u"[ｦ-ﾝ]", _str[i]) != None:
-            nowMode = 'HANKANA'
-        elif re.match(u"[。、！？―（）\.,!\?\-\(\)…・]", _str[i]) != None:
-            nowMode = 'KIGOU'
+            nowMode = 'HAN_KATAKANA'
+        elif re.match(u"[。、！？―（）・]", _str[i]) != None:
+            nowMode = 'ZEN_KIGOU'
+#            if preMode.split("_")[0] == 'ZEN':
+#                nowMode = preMode
+        elif re.match(u"[\.,!\?\-\(\)…]", _str[i]) != None:
+            nowMode = 'HAN_KIGOU'
+#            if preMode.split("_")[0] == 'HAN':
+#                nowMode = preMode
+        elif re.match(u"[ﾞﾟ]", _str[i]) != None:
+            nowMode = 'OTHER'
+            if preMode == 'HAN_KATAKANA':
+                nowMode = preMode
+        elif re.match(u"[a-zA-Z]", _str[i]) != None:
+            nowMode = 'ALPHABET'
+        elif re.match(u"[0-9]", _str[i]) != None:
+            nowMode = 'HAN_NUMBER'
+        elif re.match(u"[０-９]", _str[i]) != None:
+            nowMode = 'ZEN_NUMBER'
         else:
             nowMode = 'OTHER'
             
