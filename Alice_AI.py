@@ -31,11 +31,11 @@ class StrFunctions(object):
         score = 0
         for i in str_mlist:
             if i in msg_list:
-                score += 10
+                score += 3
     
         for i in pre_str_mlist:
             if i in msg_list:
-                score += 3
+                score += 1
                 
         return score
 
@@ -87,15 +87,18 @@ class StrFunctions(object):
         return morphlist
 
 class AliceEngine(object):
-    def __init__(self, _filename):
+    def __init__(self, _filename, _name=u"Alice"):
+        self.name = _name
         self.strf = StrFunctions()
 
         self.lines, self.filename = self.readtoken(_filename)
         self.tokenlist = self.strf.ngramlist(self.strf.morphtoken(self.lines))
         
+        self.message = u""
         self.userstr = u""
         self.pre_userstr = u""
     
+        print self.name+u"さんがログインしました。"
     def readtoken(self, _filename):
         filename = ''
         if len(sys.argv)==1: filename = _filename
@@ -159,8 +162,7 @@ class AliceEngine(object):
             for i in self.pre_userstr:
                 inilist += self.makerouret(i)
                 
-        if inilist == []:
-            inilist = [random.randint(0,len(self.tokenlist)-1)]
+        inilist.append(random.randint(0,len(self.tokenlist)-1))
         
         return inilist
 
@@ -173,26 +175,39 @@ class AliceEngine(object):
         message = sorted(message, key=lambda x:x[1], reverse=True)
         return message
     
-    def mainloop(self):
-        while True:
-            input = raw_input("あなた：").decode('utf-8')
-            if input == '': continue
+    def choosemessage(self):
+        messagelist = self.makemessage(self.makeinilist())
+        _message = self.message
+        cnt = 0
+        rouret = []
+        for i in range(len(messagelist)):
+            rouret += [i]*(messagelist[i][1]+1)
+            
+        while _message == self.message and cnt <= 100:
+            _message = messagelist[random.choice(rouret)][0]
+            cnt += 1
+#            print _message, self.message
+            
+        return _message
+    
+    def mainloop(self, input):
+        self.userstr = self.addtoken(input)
+    
+        for i in EOS:
+            while i in self.userstr: self.userstr.remove(i)
+            while i in self.pre_userstr: self.pre_userstr.remove(i)
 
-            self.userstr = self.addtoken(input)
-        
-            for i in EOS:
-                while i in self.userstr: self.userstr.remove(i)
-                while i in self.pre_userstr: self.pre_userstr.remove(i)
+        self.message = self.choosemessage()
+        print self.name+u":"+self.message
 
-            message = self.makemessage(self.makeinilist())
-            print u"アリーチェ："+message[int(random.randint(0,len(message)-1)/4)][0]
-
-            self.pre_userstr = self.userstr
+        self.pre_userstr = self.userstr
+        return self.message
 
 if __name__ == "__main__":
     alice = AliceEngine("save/alice.txt")
-
-    print "アリーチェ：いらっしゃいませ〜。メッセージをどうぞ〜"
-    alice.mainloop()
+    while True:
+        input = raw_input("You：").decode('utf-8')
+        if input == '': continue
+        alice.mainloop(input)
 
 
