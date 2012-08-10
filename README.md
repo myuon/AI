@@ -62,7 +62,7 @@ if __name__ == "__main__":
 ``./ai2ai.py``であれば真ん中辺りの
 
 ```python
-AI.append(Alice_AI.AliceEngine("save/alice_2.txt",u"Alice"))　# ← ココです
+AI.append(Alice_AI.AliceEngine("save/alice_2.txt",u"Alice"))  # ← ココです
 AI.append(Alice_AI.AliceEngine("save/bob_2.txt",u"Bob"))      # ← ココです
 ```
 
