@@ -8,7 +8,6 @@
 """
 
 import re
-import sys
 
 # ファイル関係
 def FOpen(_file):
